@@ -25,14 +25,13 @@ class MainMenuState extends MusicBeatState
 
 	//Centered/Text options
 	var optionShit:Array<String> = [
-		'story_mode',
+		'story_mode', // shown as START
 		'freeplay',
-		#if MODS_ALLOWED 'mods', #end
 		'credits'
 	];
 
-	var leftOption:String = #if ACHIEVEMENTS_ALLOWED 'achievements' #else null #end;
-	var rightOption:String = 'options';
+	var leftOption:String = null;
+	var rightOption:String = null; // Options: press O on this menu
 
 	var magenta:FlxSprite;
 	var camFollow:FlxObject;
@@ -81,9 +80,10 @@ class MainMenuState extends MusicBeatState
 
 		for (num => option in optionShit)
 		{
-			var item:FlxSprite = createMenuItem(option, 0, (num * 140) + 90);
-			item.y += (4 - optionShit.length) * 70; // Offsets for when you have anything other than 4 items
-			item.screenCenter(X);
+			// three squares side by side
+			var item:FlxSprite = createMenuItem(option, 0, 0);
+			item.x = (FlxG.width / 2) + ((num - 1) * 400) - (item.width / 2);
+			item.y = 370 - (item.height / 2);
 		}
 
 		if (leftOption != null)
@@ -151,11 +151,26 @@ class MainMenuState extends MusicBeatState
 
 		if (!selectedSomethin)
 		{
-			if (controls.UI_UP_P)
+			if (controls.UI_LEFT_P || controls.UI_UP_P)
 				changeItem(-1);
 
-			if (controls.UI_DOWN_P)
+			if (controls.UI_RIGHT_P || controls.UI_DOWN_P)
 				changeItem(1);
+
+			if (FlxG.keys.justPressed.O)
+			{
+				selectedSomethin = true;
+				FlxG.mouse.visible = false;
+				FlxG.sound.play(Paths.sound('confirmMenu'));
+				MusicBeatState.switchState(new OptionsState());
+				OptionsState.onPlayState = false;
+				if (PlayState.SONG != null)
+				{
+					PlayState.SONG.arrowSkin = null;
+					PlayState.SONG.splashSkin = null;
+					PlayState.stageUI = 'normal';
+				}
+			}
 
 			var allowMouse:Bool = allowMouse;
 			if (allowMouse && ((FlxG.mouse.deltaScreenX != 0 && FlxG.mouse.deltaScreenY != 0) || FlxG.mouse.justPressed)) //FlxG.mouse.deltaScreenX/Y checks is more accurate than FlxG.mouse.justMoved
@@ -360,6 +375,7 @@ class MainMenuState extends MusicBeatState
 		for (item in menuItems)
 		{
 			item.animation.play('idle');
+			item.scale.set(1, 1);
 			item.centerOffsets();
 		}
 
@@ -374,6 +390,7 @@ class MainMenuState extends MusicBeatState
 				selectedItem = rightItem;
 		}
 		selectedItem.animation.play('selected');
+		selectedItem.scale.set(1.08, 1.08);
 		selectedItem.centerOffsets();
 		camFollow.y = selectedItem.getGraphicMidpoint().y;
 	}

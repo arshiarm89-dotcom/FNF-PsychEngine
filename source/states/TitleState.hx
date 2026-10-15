@@ -203,10 +203,9 @@ class TitleState extends MusicBeatState
 		add(credGroup);
 		add(ngSpr);
 
-		if (initialized)
-			skipIntro();
-		else
-			initialized = true;
+		// VS RAF: no credit texts, go straight to the red/white wipe
+		initialized = true;
+		skipIntro();
 
 		// credGroup.add(credTextShit);
 	}
@@ -526,38 +525,30 @@ class TitleState extends MusicBeatState
 					//FlxG.sound.music.stop();
 					FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
 					FlxG.sound.music.fadeIn(4, 0, 0.7);
-				case 2:
-					createCoolText(['Psych Engine by'], 40);
-				case 4:
-					addMoreText('Shadow Mario', 40);
-					addMoreText('Riveren', 40);
-				case 5:
-					deleteCoolText();
-				case 6:
-					createCoolText(['Not associated', 'with'], -40);
-				case 8:
-					addMoreText('newgrounds', -40);
-					ngSpr.visible = true;
-				case 9:
-					deleteCoolText();
-					ngSpr.visible = false;
-				case 10:
-					createCoolText([curWacky[0]]);
-				case 12:
-					addMoreText(curWacky[1]);
-				case 13:
-					deleteCoolText();
-				case 14:
-					addMoreText('Friday');
-				case 15:
-					addMoreText('Night');
-				case 16:
-					addMoreText('Funkin'); // credTextShit.text += '\nFunkin';
 
-				case 17:
-					skipIntro();
 			}
 		}
+	}
+
+	// Red + white panels cover the title screen and slide away to the right
+	function startRedWipe():Void
+	{
+		var red:FlxSprite = new FlxSprite().makeGraphic(1, 1, 0xFFB00012);
+		red.scale.set(FlxG.width + 8, FlxG.height + 8);
+		red.updateHitbox();
+		red.setPosition(-4, -4);
+		red.scrollFactor.set();
+		add(red);
+
+		var white:FlxSprite = new FlxSprite().makeGraphic(1, 1, FlxColor.WHITE);
+		white.scale.set(FlxG.width + 8, FlxG.height + 8);
+		white.updateHitbox();
+		white.setPosition(-4, -4);
+		white.scrollFactor.set();
+		add(white);
+
+		FlxTween.tween(white, {x: FlxG.width + 20}, 0.8, {startDelay: 0.45, ease: FlxEase.cubeIn, onComplete: function(_) { remove(white); white.destroy(); }});
+		FlxTween.tween(red, {x: FlxG.width + 20}, 0.8, {startDelay: 0.7, ease: FlxEase.cubeIn, onComplete: function(_) { remove(red); red.destroy(); }});
 	}
 
 	var skippedIntro:Bool = false;
@@ -627,7 +618,7 @@ class TitleState extends MusicBeatState
 			{
 				remove(ngSpr);
 				remove(credGroup);
-				FlxG.camera.flash(FlxColor.WHITE, 4);
+				startRedWipe();
 
 				var easteregg:String = FlxG.save.data.psychDevsEasterEgg;
 				if (easteregg == null) easteregg = '';
