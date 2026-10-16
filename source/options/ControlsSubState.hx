@@ -59,6 +59,13 @@ class ControlsSubState extends MusicBeatSubstate
 	var onKeyboardMode:Bool = true;
 	
 	var controllerSpr:FlxSprite;
+	var ctrlText:Alphabet;
+	var ctrlGlow:FlxSprite;
+	var ctrlBaseY:Float = 40;
+	var ctrlTextBaseY:Float = 90;
+	var ctrlTime:Float = 0;
+	var ctrlPopVel:Float = 0;
+	var ctrlPop:Float = 1;
 	
 	public function new()
 	{
@@ -108,6 +115,18 @@ class ControlsSubState extends MusicBeatSubstate
 		text.alignment = CENTERED;
 		text.setScale(0.4);
 		add(text);
+		ctrlText = text;
+		ctrlBaseY = controllerSpr.y;
+		ctrlTextBaseY = text.y;
+
+		// glowing red ring behind the icon
+		ctrlGlow = new FlxSprite(controllerSpr.x - 14, controllerSpr.y - 14).makeGraphic(1, 1, 0xFFFF2030);
+		ctrlGlow.scale.set(controllerSpr.width + 28, controllerSpr.height + 28);
+		ctrlGlow.updateHitbox();
+		ctrlGlow.setPosition(controllerSpr.x - 14, controllerSpr.y - 14);
+		ctrlGlow.alpha = 0.25;
+		ctrlGlow.blend = openfl.display.BlendMode.ADD;
+		insert(members.indexOf(controllerSpr), ctrlGlow);
 
 		createTexts();
 	}
@@ -271,6 +290,7 @@ class ControlsSubState extends MusicBeatSubstate
 	var timeForMoving:Float = 0.1;
 	override function update(elapsed:Float)
 	{
+		updateCtrlIcon(elapsed);
 		if(timeForMoving > 0) //Fix controller bug
 		{
 			timeForMoving = Math.max(0, timeForMoving - elapsed);
@@ -499,8 +519,33 @@ class ControlsSubState extends MusicBeatSubstate
 		FlxG.sound.play(Paths.sound('scrollMenu'));
 	}
 
+	function updateCtrlIcon(elapsed:Float)
+	{
+		if(controllerSpr == null) return;
+		ctrlTime += elapsed;
+		ctrlPopVel += ((1 - ctrlPop) * 200 - ctrlPopVel * 12) * elapsed;
+		ctrlPop += ctrlPopVel * elapsed;
+		var bob:Float = Math.sin(ctrlTime * 2.4) * 5;
+		controllerSpr.y = ctrlBaseY + bob;
+		controllerSpr.angle = Math.sin(ctrlTime * 1.7) * 4;
+		controllerSpr.scale.set(ctrlPop * (1 + Math.sin(ctrlTime * 3.0) * 0.04), ctrlPop * (1 + Math.sin(ctrlTime * 3.0) * 0.04));
+		if(ctrlText != null) ctrlText.y = ctrlTextBaseY + bob;
+		if(ctrlGlow != null)
+		{
+			ctrlGlow.y = controllerSpr.y - 14;
+			ctrlGlow.alpha = 0.18 + (Math.sin(ctrlTime * 3.0) * 0.5 + 0.5) * 0.22;
+			ctrlGlow.scale.set(ctrlPop, ctrlPop);
+			ctrlGlow.scale.x *= (controllerSpr.frameWidth + 28);
+			ctrlGlow.scale.y *= (controllerSpr.frameHeight + 28);
+			ctrlGlow.updateHitbox();
+			ctrlGlow.x = controllerSpr.x - 14;
+			ctrlGlow.y = controllerSpr.y - 14;
+		}
+	}
+
 	function swapMode()
 	{
+		ctrlPopVel += 7;
 		FlxTween.cancelTweensOf(bg);
 		FlxTween.color(bg, 0.5, bg.color, onKeyboardMode ? gamepadColor : keyboardColor, {ease: FlxEase.linear});
 		onKeyboardMode = !onKeyboardMode;
