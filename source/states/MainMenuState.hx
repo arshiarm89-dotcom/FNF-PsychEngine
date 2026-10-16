@@ -31,7 +31,7 @@ class MainMenuState extends MusicBeatState
 	];
 
 	var leftOption:String = null;
-	var rightOption:String = null; // Options: press O on this menu
+	var rightOption:String = 'options'; // OPTIONS banner at the bottom (press DOWN)
 
 	var magenta:FlxSprite;
 	var bgMain:FlxSprite;
@@ -136,8 +136,11 @@ class MainMenuState extends MusicBeatState
 			leftItem = createMenuItem(leftOption, 60, 490);
 		if (rightOption != null)
 		{
-			rightItem = createMenuItem(rightOption, FlxG.width - 60, 490);
-			rightItem.x -= rightItem.width;
+			rightItem = createMenuItem(rightOption, 0, 0);
+			rightItem.x = (FlxG.width / 2) - (rightItem.width / 2);
+			rightItem.y = 566;
+			baseYs.push(rightItem.y);
+			scaleVel.push(0);
 		}
 
 		var psychVer:FlxText = new FlxText(12, FlxG.height - 44, 0, "Psych Engine v" + psychEngineVersion, 12);
@@ -219,7 +222,7 @@ class MainMenuState extends MusicBeatState
 		{
 			var it:FlxSprite = menuItems.members[i];
 			if (it == null || i >= baseYs.length) continue;
-			var isSel:Bool = (curColumn == CENTER && i == curSelected);
+			var isSel:Bool = (curColumn == CENTER && i == curSelected) || (curColumn == RIGHT && i == optionShit.length);
 			if (!selectedSomethin || isSel)
 				it.y = baseYs[i] + Math.sin(menuTime * 1.8 + i * 1.7) * (isSel ? 7 : 4);
 			var target:Float = isSel ? 1.12 + Math.sin(menuTime * 5) * 0.015 : 1.0;
@@ -235,11 +238,26 @@ class MainMenuState extends MusicBeatState
 
 		if (!selectedSomethin)
 		{
-			if (controls.UI_LEFT_P || controls.UI_UP_P)
-				changeItem(-1);
-
-			if (controls.UI_RIGHT_P || controls.UI_DOWN_P)
-				changeItem(1);
+			if (curColumn == CENTER)
+			{
+				if (controls.UI_LEFT_P)
+					changeItem(-1);
+				if (controls.UI_RIGHT_P)
+					changeItem(1);
+				if (controls.UI_DOWN_P && rightItem != null)
+				{
+					curColumn = RIGHT;
+					changeItem();
+				}
+			}
+			else if (curColumn == RIGHT)
+			{
+				if (controls.UI_UP_P || controls.UI_LEFT_P || controls.UI_RIGHT_P)
+				{
+					curColumn = CENTER;
+					changeItem();
+				}
+			}
 
 			if (FlxG.keys.justPressed.O)
 			{
@@ -333,7 +351,7 @@ class MainMenuState extends MusicBeatState
 						curColumn = LEFT;
 						changeItem();
 					}
-					else if(controls.UI_RIGHT_P && rightOption != null)
+					else if(false)
 					{
 						curColumn = RIGHT;
 						changeItem();
