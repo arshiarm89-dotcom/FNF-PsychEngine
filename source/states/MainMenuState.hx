@@ -15,7 +15,7 @@ enum MainMenuColumn {
 class MainMenuState extends MusicBeatState
 {
 	public static var psychEngineVersion:String = '1.0.4'; // This is also used for Discord RPC
-	public static var curSelected:Int = 0;
+	public static var curSelected:Int = 1; // START is in the middle
 	public static var curColumn:MainMenuColumn = CENTER;
 	var allowMouse:Bool = true; //Turn this off to block mouse movement in menus
 
@@ -25,15 +25,27 @@ class MainMenuState extends MusicBeatState
 
 	//Centered/Text options
 	var optionShit:Array<String> = [
-		'story_mode', // shown as START
-		'freeplay',
-		'credits'
+		'credits',    // left
+		'story_mode', // middle (shown as START)
+		'freeplay'    // right
 	];
 
 	var leftOption:String = null;
 	var rightOption:String = null; // Options: press O on this menu
 
 	var magenta:FlxSprite;
+	var bgMain:FlxSprite;
+	var bgSmoke:FlxSprite;
+	var bgBaseX:Float = 0;
+	var bgBaseY:Float = 0;
+	var smokeBaseX:Float = 0;
+	var smokeBaseY:Float = 0;
+	var menuTime:Float = 0;
+	var baseYs:Array<Float> = [];
+	var scaleVel:Array<Float> = [];
+	var embers:Array<FlxSprite> = [];
+	var emberSpeed:Array<Float> = [];
+	var emberDrift:Array<Float> = [];
 	var camFollow:FlxObject;
 
 	static var showOutdatedWarning:Bool = true;
@@ -54,13 +66,45 @@ class MainMenuState extends MusicBeatState
 		persistentUpdate = persistentDraw = true;
 
 		var yScroll:Float = 0.25;
+		// animated background: big image that slowly drifts
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menuBG'));
 		bg.antialiasing = ClientPrefs.data.antialiasing;
 		bg.scrollFactor.set(0, yScroll);
-		bg.setGraphicSize(Std.int(bg.width * 1.175));
+		bg.setGraphicSize(Std.int(bg.width * 1.4));
 		bg.updateHitbox();
 		bg.screenCenter();
+		bgMain = bg;
+		bgBaseX = bg.x;
+		bgBaseY = bg.y;
 		add(bg);
+
+		// second layer (red smoke) drifting the other way, glowing in and out
+		bgSmoke = new FlxSprite(-80).loadGraphic(Paths.image('menuDesat'));
+		bgSmoke.antialiasing = ClientPrefs.data.antialiasing;
+		bgSmoke.scrollFactor.set(0, yScroll);
+		bgSmoke.setGraphicSize(Std.int(bgSmoke.width * 1.6));
+		bgSmoke.updateHitbox();
+		bgSmoke.screenCenter();
+		bgSmoke.color = 0xFFC8101A;
+		bgSmoke.blend = openfl.display.BlendMode.ADD;
+		bgSmoke.alpha = 0.2;
+		smokeBaseX = bgSmoke.x;
+		smokeBaseY = bgSmoke.y;
+		add(bgSmoke);
+
+		// floating embers
+		for (i in 0...36)
+		{
+			var e:FlxSprite = new FlxSprite(FlxG.random.float(0, FlxG.width), FlxG.random.float(0, FlxG.height));
+			var sz:Int = FlxG.random.int(2, 5);
+			e.makeGraphic(sz, sz, FlxColor.fromRGB(255, FlxG.random.int(40, 110), 40));
+			e.scrollFactor.set();
+			e.alpha = FlxG.random.float(0.2, 0.7);
+			embers.push(e);
+			emberSpeed.push(FlxG.random.float(18, 60));
+			emberDrift.push(FlxG.random.float(-14, 14));
+			add(e);
+		}
 
 		camFollow = new FlxObject(0, 0, 1, 1);
 		add(camFollow);
@@ -84,6 +128,8 @@ class MainMenuState extends MusicBeatState
 			var item:FlxSprite = createMenuItem(option, 0, 0);
 			item.x = (FlxG.width / 2) + ((num - 1) * 400) - (item.width / 2);
 			item.y = 370 - (item.height / 2);
+			baseYs.push(item.y);
+			scaleVel.push(0);
 		}
 
 		if (leftOption != null)
@@ -146,6 +192,44 @@ class MainMenuState extends MusicBeatState
 	var timeNotMoving:Float = 0;
 	override function update(elapsed:Float)
 	{
+		menuTime += elapsed;
+
+		// background drift + glow
+		bgMain.x = bgBaseX + Math.sin(menuTime * 0.23) * 70;
+		bgMain.y = bgBaseY + Math.cos(menuTime * 0.17) * 40;
+		bgSmoke.x = smokeBaseX - Math.sin(menuTime * 0.19 + 1.3) * 90;
+		bgSmoke.y = smokeBaseY - Math.cos(menuTime * 0.27) * 50;
+		bgSmoke.alpha = 0.22 + Math.sin(menuTime * 0.8) * 0.12;
+
+		// embers
+		for (i in 0...embers.length)
+		{
+			var e:FlxSprite = embers[i];
+			e.y -= emberSpeed[i] * elapsed;
+			e.x += (emberDrift[i] + Math.sin(menuTime * 1.5 + i) * 10) * elapsed;
+			if (e.y < -10)
+			{
+				e.y = FlxG.height + 10;
+				e.x = FlxG.random.float(0, FlxG.width);
+			}
+		}
+
+		// buttons: floating + springy pop on the selected one
+		for (i in 0...menuItems.members.length)
+		{
+			var it:FlxSprite = menuItems.members[i];
+			if (it == null || i >= baseYs.length) continue;
+			var isSel:Bool = (curColumn == CENTER && i == curSelected);
+			if (!selectedSomethin || isSel)
+				it.y = baseYs[i] + Math.sin(menuTime * 1.8 + i * 1.7) * (isSel ? 7 : 4);
+			var target:Float = isSel ? 1.12 + Math.sin(menuTime * 5) * 0.015 : 1.0;
+			var cur:Float = it.scale.x;
+			scaleVel[i] += ((target - cur) * 220 - scaleVel[i] * 13) * elapsed;
+			var ns:Float = cur + scaleVel[i] * elapsed;
+			it.scale.set(ns, ns);
+			it.alpha = selectedSomethin ? it.alpha : (isSel ? 1 : 0.82);
+		}
+
 		if (FlxG.sound.music.volume < 0.8)
 			FlxG.sound.music.volume = Math.min(FlxG.sound.music.volume + 0.5 * elapsed, 0.8);
 
@@ -345,12 +429,15 @@ class MainMenuState extends MusicBeatState
 					}
 				});
 				
+				var ai:Int = menuItems.members.indexOf(item);
+				if (ai >= 0) scaleVel[ai] += 3.0;
+
 				for (memb in menuItems)
 				{
 					if(memb == item)
 						continue;
 
-					FlxTween.tween(memb, {alpha: 0}, 0.4, {ease: FlxEase.quadOut});
+					FlxTween.tween(memb, {alpha: 0, y: memb.y + 80}, 0.4, {ease: FlxEase.quadOut});
 				}
 			}
 			#if desktop
@@ -375,7 +462,6 @@ class MainMenuState extends MusicBeatState
 		for (item in menuItems)
 		{
 			item.animation.play('idle');
-			item.scale.set(1, 1);
 			item.centerOffsets();
 		}
 
@@ -390,8 +476,9 @@ class MainMenuState extends MusicBeatState
 				selectedItem = rightItem;
 		}
 		selectedItem.animation.play('selected');
-		selectedItem.scale.set(1.08, 1.08);
 		selectedItem.centerOffsets();
+		var si:Int = menuItems.members.indexOf(selectedItem);
+		if (si >= 0 && change != 0) scaleVel[si] += 1.6; // pop
 		camFollow.y = selectedItem.getGraphicMidpoint().y;
 	}
 }
