@@ -86,7 +86,7 @@ class WeekData {
 		var originalLength:Int = directories.length;
 		#end
 
-		var sexList:Array<String> = CoolUtil.coolTextFile(Paths.getSharedPath('weeks/weekList.txt'));
+		var sexList:Array<String> = []; // base-game weeks are disabled: only our own mod weeks are loaded
 		for (i in 0...sexList.length) {
 			for (j in 0...directories.length) {
 				var fileToCheck:String = directories[j] + 'weeks/' + sexList[i] + '.json';
@@ -112,6 +112,7 @@ class WeekData {
 
 		#if MODS_ALLOWED
 		for (i in 0...directories.length) {
+			if(i == 1) continue; // skip assets/shared (base-game weeks)
 			var directory:String = directories[i] + 'weeks/';
 			if(FileSystem.exists(directory)) {
 				var listOfWeeks:Array<String> = CoolUtil.coolTextFile(directory + 'weekList.txt');
