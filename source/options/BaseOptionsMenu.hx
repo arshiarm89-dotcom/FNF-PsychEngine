@@ -42,7 +42,9 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		bg.color = 0xFFea71fd;
 		bg.screenCenter();
 		bg.antialiasing = ClientPrefs.data.antialiasing;
+		bg.visible = false;
 		add(bg);
+		add(new backend.RedBG(0.45));
 
 		// avoids lagspikes while scrolling through menus!
 		grpOptions = new FlxTypedGroup<Alphabet>();
@@ -54,8 +56,8 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		checkboxGroup = new FlxTypedGroup<CheckboxThingie>();
 		add(checkboxGroup);
 
-		descBox = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
-		descBox.alpha = 0.6;
+		descBox = new FlxSprite().makeGraphic(1, 1, 0xFF1A0004);
+		descBox.alpha = 0.85;
 		add(descBox);
 
 		var titleText:Alphabet = new Alphabet(75, 45, title, true);
@@ -64,7 +66,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		add(titleText);
 
 		descText = new FlxText(50, 600, 1180, "", 32);
-		descText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		descText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, 0xFF5A0008);
 		descText.scrollFactor.set();
 		descText.borderSize = 2.4;
 		add(descText);

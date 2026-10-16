@@ -17,7 +17,9 @@ class LanguageSubState extends MusicBeatSubstate
 		bg.color = 0xFFea71fd;
 		bg.antialiasing = ClientPrefs.data.antialiasing;
 		bg.screenCenter();
+		bg.visible = false;
 		add(bg);
+		add(new backend.RedBG(0.45));
 		add(grpLanguages);
 
 		languages.push(ClientPrefs.defaultData.language); //English (US)

@@ -59,7 +59,9 @@ class NotesColorSubState extends MusicBeatSubstate
 		bg.color = 0xFFEA71FD;
 		bg.screenCenter();
 		bg.antialiasing = ClientPrefs.data.antialiasing;
+		bg.visible = false;
 		add(bg);
+		add(new backend.RedBG(0.35));
 
 		var grid:FlxBackdrop = new FlxBackdrop(FlxGridOverlay.createGrid(80, 80, 160, 160, true, 0x33FFFFFF, 0x0));
 		grid.velocity.set(40, 40);
