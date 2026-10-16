@@ -5,6 +5,7 @@ import backend.Highscore;
 import backend.Song;
 
 import flixel.util.FlxStringUtil;
+import flixel.group.FlxGroup;
 
 import states.StoryMenuState;
 import states.FreeplayState;
