@@ -12,7 +12,10 @@ import options.OptionsState;
 
 class PauseSubState extends MusicBeatSubstate
 {
-	var grpMenuShit:FlxTypedGroup<Alphabet>;
+	var grpMenuShit:FlxTypedGroup<FlxText>;
+	var panelGrp:FlxGroup;
+	var selBar:FlxSprite;
+	var selBarTween:FlxTween;
 
 	var menuItems:Array<String> = [];
 	var menuItemsOG:Array<String> = ['Resume', 'Restart Song', 'Change Difficulty', 'Options', 'Exit to menu'];
@@ -22,7 +25,7 @@ class PauseSubState extends MusicBeatSubstate
 	var pauseMusic:FlxSound;
 	var practiceText:FlxText;
 	var skipTimeText:FlxText;
-	var skipTimeTracker:Alphabet;
+	var skipTimeTracker:FlxText;
 	var curTime:Float = Math.max(0, Conductor.songPosition);
 
 	var missingTextBG:FlxSprite;
@@ -122,7 +125,9 @@ class PauseSubState extends MusicBeatSubstate
 		FlxTween.tween(levelDifficulty, {alpha: 1, y: levelDifficulty.y + 5}, 0.4, {ease: FlxEase.quartInOut, startDelay: 0.5});
 		FlxTween.tween(blueballedTxt, {alpha: 1, y: blueballedTxt.y + 5}, 0.4, {ease: FlxEase.quartInOut, startDelay: 0.7});
 
-		grpMenuShit = new FlxTypedGroup<Alphabet>();
+		panelGrp = new FlxGroup();
+		add(panelGrp);
+		grpMenuShit = new FlxTypedGroup<FlxText>();
 		add(grpMenuShit);
 
 		missingTextBG = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
@@ -372,15 +377,21 @@ class PauseSubState extends MusicBeatSubstate
 		curSelected = FlxMath.wrap(curSelected + change, 0, menuItems.length - 1);
 		for (num => item in grpMenuShit.members)
 		{
-			item.targetY = num - curSelected;
-			item.alpha = 0.6;
-			if (item.targetY == 0)
+			item.alpha = 0.75;
+			item.color = 0xFFFFD0D0;
+			if (num == curSelected)
 			{
 				item.alpha = 1;
+				item.color = FlxColor.WHITE;
 				if(item == skipTimeTracker)
 				{
 					curTime = Math.max(0, Conductor.songPosition);
 					updateSkipTimeText();
+				}
+				if(selBar != null)
+				{
+					if(selBarTween != null) selBarTween.cancel();
+					selBarTween = FlxTween.tween(selBar, {y: item.y - 4}, 0.12, {ease: FlxEase.quadOut});
 				}
 			}
 		}
@@ -390,24 +401,64 @@ class PauseSubState extends MusicBeatSubstate
 	}
 
 	function regenMenu():Void {
-		for (i in 0...grpMenuShit.members.length)
+		while (grpMenuShit.members.length > 0)
 		{
-			var obj:Alphabet = grpMenuShit.members[0];
+			var obj:FlxText = grpMenuShit.members[0];
 			obj.kill();
 			grpMenuShit.remove(obj, true);
 			obj.destroy();
 		}
+		for (o in panelGrp.members.copy())
+		{
+			if(o == null) continue;
+			panelGrp.remove(o, true);
+			o.destroy();
+		}
+		selBar = null;
+		deleteSkipTimeText();
+
+		var n:Int = menuItems.length;
+		var rowH:Float = Math.min(58, 520 / n);
+		var panelW:Float = 560;
+		var headH:Float = 70;
+		var panelH:Float = headH + n * rowH + 28;
+		var px:Float = (FlxG.width - panelW) / 2;
+		var py:Float = Math.max(20, (FlxG.height - panelH) / 2);
+
+		var shadow = new FlxSprite(px + 8, py + 10).makeGraphic(1, 1, FlxColor.BLACK);
+		shadow.scale.set(panelW, panelH); shadow.updateHitbox(); shadow.alpha = 0.5; shadow.scrollFactor.set();
+		panelGrp.add(shadow);
+		var border = new FlxSprite(px - 5, py - 5).makeGraphic(1, 1, 0xFF14000A);
+		border.scale.set(panelW + 10, panelH + 10); border.updateHitbox(); border.scrollFactor.set();
+		panelGrp.add(border);
+		var panel = new FlxSprite(px, py).makeGraphic(1, 1, 0xFFB00012);
+		panel.scale.set(panelW, panelH); panel.updateHitbox(); panel.scrollFactor.set();
+		panelGrp.add(panel);
+		var headBar = new FlxSprite(px, py).makeGraphic(1, 1, 0xFF6E000B);
+		headBar.scale.set(panelW, headH - 6); headBar.updateHitbox(); headBar.scrollFactor.set();
+		panelGrp.add(headBar);
+
+		var title = new FlxText(px, py + 12, panelW, Language.getPhrase('pause_title', 'PAUSED'), 40);
+		title.setFormat(Paths.font("vcr.ttf"), 40, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, 0xFF14000A);
+		title.borderSize = 3; title.scrollFactor.set();
+		panelGrp.add(title);
+
+		selBar = new FlxSprite(px + 14, py + headH).makeGraphic(1, 1, FlxColor.BLACK);
+		selBar.scale.set(panelW - 28, rowH - 2); selBar.updateHitbox(); selBar.alpha = 0.45; selBar.scrollFactor.set();
+		panelGrp.add(selBar);
 
 		for (num => str in menuItems) {
-			var item = new Alphabet(90, 320, Language.getPhrase('pause_$str', str), true);
-			item.isMenuItem = true;
-			item.targetY = num;
+			var label:String = Language.getPhrase('pause_$str', str).toUpperCase();
+			var item = new FlxText(px + 14, py + headH + num * rowH + (rowH - 34) / 2 - 3, panelW - 28, label, 32);
+			item.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, 0xFF3A0006);
+			item.borderSize = 2;
+			item.scrollFactor.set();
 			grpMenuShit.add(item);
 
 			if(str == 'Skip Time')
 			{
-				skipTimeText = new FlxText(0, 0, 0, '', 64);
-				skipTimeText.setFormat(Paths.font("vcr.ttf"), 64, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+				skipTimeText = new FlxText(0, 0, 0, '', 24);
+				skipTimeText.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 				skipTimeText.scrollFactor.set();
 				skipTimeText.borderSize = 2;
 				skipTimeTracker = item;
@@ -418,15 +469,16 @@ class PauseSubState extends MusicBeatSubstate
 			}
 		}
 		curSelected = 0;
+		if(menuItems.length > 0) selBar.y = grpMenuShit.members[0].y - 4;
 		changeSelection();
 	}
-	
+
 	function updateSkipTextStuff()
 	{
 		if(skipTimeText == null || skipTimeTracker == null) return;
 
-		skipTimeText.x = skipTimeTracker.x + skipTimeTracker.width + 60;
-		skipTimeText.y = skipTimeTracker.y;
+		skipTimeText.x = skipTimeTracker.x + skipTimeTracker.fieldWidth + 24;
+		skipTimeText.y = skipTimeTracker.y + 4;
 		skipTimeText.visible = (skipTimeTracker.alpha >= 1);
 	}
 
