@@ -43,6 +43,10 @@ class StartMenuState extends MusicBeatState
 	var pop:Array<Float> = [0, 0];
 	var popVel:Array<Float> = [0, 0];
 	var lockShake:Float = 0;
+	var embers:Array<FlxSprite> = [];
+	var emberSpeed:Array<Float> = [];
+	var emberDrift:Array<Float> = [];
+	var emberBase:Array<Float> = [];
 
 	override function create()
 	{
@@ -79,6 +83,21 @@ class StartMenuState extends MusicBeatState
 		smoke.blend = openfl.display.BlendMode.ADD;
 		smoke.alpha = 0;
 		add(smoke);
+
+		// floating red embers (same as the main menu), shown on the dark side
+		for (i in 0...44)
+		{
+			var e:FlxSprite = new FlxSprite(FlxG.random.float(0, FlxG.width), FlxG.random.float(0, FlxG.height));
+			var sz:Int = FlxG.random.int(2, 6);
+			e.makeGraphic(sz, sz, FlxColor.fromRGB(255, FlxG.random.int(40, 110), 40));
+			e.scrollFactor.set();
+			emberBase.push(FlxG.random.float(0.3, 0.9));
+			e.alpha = 0;
+			embers.push(e);
+			emberSpeed.push(FlxG.random.float(18, 70));
+			emberDrift.push(FlxG.random.float(-14, 14));
+			add(e);
+		}
 
 		// 3) START preview: Saeed + Bahare
 		coupleGlow = new FlxSprite().loadGraphic(Paths.image('startmenu/couple'));
@@ -217,14 +236,28 @@ class StartMenuState extends MusicBeatState
 		smoke.x = (FlxG.width - smoke.width) / 2 - Math.sin(t * 0.21 + 0.7) * 90;
 		smoke.y = (FlxG.height - smoke.height) / 2 - Math.cos(t * 0.29) * 50;
 
+		for (i in 0...embers.length)
+		{
+			var e:FlxSprite = embers[i];
+			e.y -= emberSpeed[i] * elapsed;
+			e.x += (emberDrift[i] + Math.sin(t * 1.5 + i) * 10) * elapsed;
+			if (e.y < -10)
+			{
+				e.y = FlxG.height + 10;
+				e.x = FlxG.random.float(0, FlxG.width);
+			}
+			e.alpha = emberBase[i] * aDark;
+		}
+
 		// couple: slow breathing + glow pulse
-		var cs:Float = 0.5 * (1 + Math.sin(t * 1.7) * 0.012);
+		// anchored to the bottom-right corner so the cut edges stay off-screen
+		var cs:Float = 0.56 * (1 + Math.sin(t * 1.7) * 0.006);
 		couple.scale.set(cs, cs);
 		couple.updateHitbox();
-		couple.x = RIGHT_CX - couple.width / 2 + (1 - aStart) * 60;
-		couple.y = 392 - couple.height / 2 + Math.sin(t * 1.3) * 5;
+		couple.x = FlxG.width - couple.width + 4 + (1 - aStart) * 80;
+		couple.y = FlxG.height - couple.height + 4 + Math.sin(t * 1.3) * 3;
 		couple.alpha = aStart;
-		coupleGlow.scale.set(cs * 1.035, cs * 1.035);
+		coupleGlow.scale.set(cs * 1.03, cs * 1.03);
 		coupleGlow.updateHitbox();
 		coupleGlow.x = couple.x + (couple.width - coupleGlow.width) / 2;
 		coupleGlow.y = couple.y + (couple.height - coupleGlow.height) / 2;
@@ -364,6 +397,10 @@ class StartMenuState extends MusicBeatState
 			var diffic:String = Difficulty.getFilePath(curDifficulty);
 			if (diffic == null) diffic = '';
 
+			PlayState.deathCounter = 0;
+			PlayState.seenCutscene = false;
+			PlayState.chartingMode = false;
+			PlayState.changedDifficulty = false;
 			PlayState.storyPlaylist = songArray;
 			PlayState.isStoryMode = true;
 			PlayState.storyDifficulty = curDifficulty;

@@ -25,6 +25,7 @@ import objects.Character;
 
 import states.MainMenuState;
 import states.StoryMenuState;
+import states.StartMenuState;
 import states.FreeplayState;
 
 import substates.PauseSubState;
@@ -752,7 +753,7 @@ class FunkinLua {
 			}
 
 			if(PlayState.isStoryMode)
-				MusicBeatState.switchState(new StoryMenuState());
+				MusicBeatState.switchState(new StartMenuState());
 			else
 				MusicBeatState.switchState(new FreeplayState());
 

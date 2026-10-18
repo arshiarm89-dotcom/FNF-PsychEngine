@@ -8,6 +8,7 @@ import flixel.FlxSubState;
 import flixel.math.FlxPoint;
 
 import states.StoryMenuState;
+import states.StartMenuState;
 import states.FreeplayState;
 
 class GameOverSubstate extends MusicBeatSubstate
@@ -167,7 +168,7 @@ class GameOverSubstate extends MusicBeatSubstate
 	
 				Mods.loadTopMod();
 				if (PlayState.isStoryMode)
-					MusicBeatState.switchState(new StoryMenuState());
+					MusicBeatState.switchState(new StartMenuState());
 				else
 					MusicBeatState.switchState(new FreeplayState());
 	
